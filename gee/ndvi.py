@@ -1,3 +1,8 @@
+"""
+NDVI Module
+Extracts monthly NDVI (2021–2025) for North America
+Computes continental mean and exports to CSV
+"""
 import ee
 import pandas as pd
 from continent_geometry import get_north_america
