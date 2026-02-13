@@ -1,3 +1,8 @@
+"""
+rainfall Module
+Extracts monthly rainfall (2021–2025) for North America
+Computes continental mean and exports to CSV
+"""
 import ee
 from continent_geometry import get_north_america
 
