@@ -14,7 +14,6 @@ region = get_north_america()
 
 print("Loading Sentinel-1 SAR dataset...")
 
-# FIXED: Changed 'W' to 'VV'
 collection = (ee.ImageCollection("COPERNICUS/S1_GRD")
               .filterBounds(region)
               .filterDate("2021-01-01", "2025-12-31")
