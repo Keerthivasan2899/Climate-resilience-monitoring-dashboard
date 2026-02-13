@@ -1,3 +1,8 @@
+"""
+Flood Module
+Extracts monthly Flood_data (2021–2025) for North America
+Computes continental mean and exports to CSV
+"""
 import ee
 from continent_geometry import get_north_america
 
@@ -9,7 +14,6 @@ region = get_north_america()
 
 print("Loading Sentinel-1 SAR dataset...")
 
-# FIXED: Changed 'W' to 'VV'
 collection = (ee.ImageCollection("COPERNICUS/S1_GRD")
               .filterBounds(region)
               .filterDate("2021-01-01", "2025-12-31")
