@@ -48,18 +48,16 @@ with col1:
     st.markdown(f"- **Region:** {region}")
     st.markdown(
         f"- **Date Range:** {date_range[0].strftime('%Y-%m-%d')} to {date_range[1].strftime('%Y-%m-%d')}")
-    st.markdown("### Insights")
+    st.markdown("### Indicator Context")
     st.markdown("- NDVI anomalies indicate vegetation stress.")
     st.markdown("- Rainfall anomalies can signal drought or flood conditions.")
-    st.markdown("- Flood anomalies highlight areas at risk of flooding.")
+    st.markdown("- Flood anomalies highlight surface water expansion.")
 
 with col2:
     st.subheader("Time Series Trend")
     st.info("Chart will appear here after data integration.")
-    st.subheader("Geospatial Distribution")
-    st.info("Map will appear here after data integration.")
 
 st.divider()
 
 st.subheader("Spatial Overview")
-st.info("Interactive map will appear here.")
+st.info("Interactive map will appear here after map integration.")
