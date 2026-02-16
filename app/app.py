@@ -1,6 +1,50 @@
 import streamlit as st
+from datetime import datetime, timedelta
 import pandas as pd
 import plotly.express as px
+
+# --------------------
+# Load Data
+# --------------------
+
+
+@st.cache_data
+def load_ndvi():
+    df = pd.read_csv("data/ndvi_with_anomaly.csv")
+    df["date"] = pd.to_datetime(
+        df["year"].astype(int).astype(str) + "-" +
+        df["month"].astype(int).astype(str) + "-01"
+    )
+    return df
+
+
+ndvi_df = load_ndvi()
+
+
+@st.cache_data
+def load_rainfall():
+    df = pd.read_csv("data/rainfall_with_anomaly.csv")
+    df["date"] = pd.to_datetime(
+        df["year"].astype(int).astype(str) + "-" +
+        df["month"].astype(int).astype(str) + "-01"
+    )
+    return df
+
+
+rain_df = load_rainfall()
+
+
+@st.cache_data
+def load_flood():
+    df = pd.read_csv("data/flood_with_anomaly.csv")
+    df["date"] = pd.to_datetime(
+        df["year"].astype(int).astype(str) + "-" +
+        df["month"].astype(int).astype(str) + "-01"
+    )
+    return df
+
+
+flood_df = load_flood()
 
 # --------------------
 # Page Configuration
@@ -30,12 +74,90 @@ region = st.sidebar.selectbox(
     ["Americas", "North America", "Central America", "South America"]
 )
 
-date_range = st.sidebar.date_input(
-    "Select Date Range",
-    value=(pd.to_datetime("2021-01-01"), pd.to_datetime("2025-12-31")),
-    min_value=pd.to_datetime("2021-01-01"),
-    max_value=pd.to_datetime("2025-12-31")
+time_mode = st.sidebar.radio(
+    "Time Selection Mode",
+    ["Predefined Time Windows", "Custom Date Range"]
 )
+
+if time_mode == "Predefined Time Windows":
+    time_window = st.sidebar.selectbox(
+        "Time Window",
+        [
+            "Full Period (2021-2025)",
+            "Last 12 Months",
+            "Last 24 Months",
+            "Last 36 Months"
+        ]
+    )
+else:
+    start_date = st.sidebar.date_input(
+        "Start Date",
+        value=datetime(2021, 1, 1),
+        min_value=datetime(2021, 1, 1),
+        max_value=datetime(2025, 12, 31)
+    )
+
+    end_date = st.sidebar.date_input(
+        "End Date",
+        value=datetime(2025, 12, 31),
+        min_value=datetime(2021, 1, 1),
+        max_value=datetime(2025, 12, 31)
+    )
+
+# --------------------
+# Filter Data
+# --------------------
+
+df = None
+value_col = None
+anomaly_col = None
+label = None
+
+if indicator == "NDVI":
+    df = ndvi_df.copy()
+    value_col = "ndvi"
+    anomaly_col = "anomaly"
+    label = "NDVI"
+
+elif indicator == "Rainfall":
+    df = rain_df.copy()
+    value_col = "rainfall_mm"
+    anomaly_col = "anomaly"
+    label = "Rainfall"
+elif indicator == "Flood":
+    df = flood_df.copy()
+    value_col = "flood_area_km2"
+    anomaly_col = "anomaly"
+    label = "Flood Area (km²)"
+else:
+    df = None
+
+if df is not None:
+
+    if time_mode == "Predefined Time Windows":
+
+        latest_date = df["date"].max()
+
+        if time_window == "Last 12 Months":
+            start_date = latest_date - pd.DateOffset(months=12)
+        elif time_window == "Last 24 Months":
+            start_date = latest_date - pd.DateOffset(months=24)
+        elif time_window == "Last 36 Months":
+            start_date = latest_date - pd.DateOffset(months=36)
+        else:
+            start_date = df["date"].min()
+
+        end_date = latest_date
+    else:
+        start_date = df["date"].min()
+        end_date = df["date"].max()
+
+    start_date = pd.to_datetime(start_date)
+    end_date = pd.to_datetime(end_date)
+
+    df = df[(df["date"] >= start_date) &
+            (df["date"] <= end_date)]
+
 
 # --------------------
 # Main Layout
@@ -43,21 +165,35 @@ date_range = st.sidebar.date_input(
 col1, col2 = st.columns([1, 3])
 
 with col1:
-    st.metric(label=f"{indicator} Anomaly", value="--", delta="--")
+    if df is not None and not df.empty:
+        latest = df.iloc[-1]
+        anomaly_val = round(latest[anomaly_col], 3)
+        st.metric(
+            label=f"Latest {label} Anomaly",
+            value=anomaly_val,
+            delta=anomaly_val
+        )
+    else:
+        st.metric("No Data", "--")
     st.markdown("### Summary")
     st.markdown(f"- **Region:** {region}")
-    st.markdown(
-        f"- **Date Range:** {date_range[0].strftime('%Y-%m-%d')} to {date_range[1].strftime('%Y-%m-%d')}")
-    st.markdown("### Indicator Context")
-    st.markdown("- NDVI anomalies indicate vegetation stress.")
-    st.markdown("- Rainfall anomalies can signal drought or flood conditions.")
-    st.markdown("- Flood anomalies highlight surface water expansion.")
+    if time_mode == "Predefined Time Windows":
+        st.markdown(f"- **Time Window:** {time_window}")
+    else:
+        st.markdown(
+            f"- **Custom Date Range:** {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}"
+        )
 
 with col2:
-    st.subheader("Time Series Trend")
-    st.info("Chart will appear here after data integration.")
+    st.subheader(f"{label} Trend")
 
-st.divider()
-
-st.subheader("Spatial Overview")
-st.info("Interactive map will appear here after map integration.")
+    if df is not None and not df.empty:
+        fig = px.line(
+            df,
+            x="date",
+            y=value_col,
+            title=f"Monthly {label}"
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("No data available.")
