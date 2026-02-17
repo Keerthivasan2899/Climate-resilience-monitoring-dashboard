@@ -47,6 +47,24 @@ def load_flood():
 flood_df = load_flood()
 
 # --------------------
+# Map Helper Function
+# --------------------
+
+
+def build_region_df(latest_value, label):
+    data = {
+        "Region": ["North America", "Central America", "South America"],
+        label: [
+            latest_value * 1.05,  # Simulated value for North America
+            latest_value * 0.95,  # Simulated value for Central America
+            latest_value * 1.10  # Simulated value for South America
+        ],
+        "iso": ["USA", "MEX", "BRA"]  # ISO codes for mapping
+    }
+    return pd.DataFrame(data)
+
+
+# --------------------
 # Page Configuration
 # --------------------
 st.set_page_config(page_title="Climate Resilience Dashboard", layout="wide")
@@ -181,8 +199,17 @@ with col1:
         st.markdown(f"- **Time Window:** {time_window}")
     else:
         st.markdown(
-            f"- **Custom Date Range:** {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}"
+            f"- **Custom Date Range:** {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
+    if df is not None and not df.empty:
+        st.markdown("---")
+        csv = df.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            "Download Filtered Data",
+            csv,
+            f"{label}_filtered.csv",
+            "text/csv"
         )
+
 
 with col2:
     st.subheader(f"{label} Trend")
@@ -197,3 +224,38 @@ with col2:
         st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("No data available.")
+
+# --------------------
+# Map Section
+# --------------------
+st.divider()
+st.subheader("Spatial Overview")
+
+if df is not None and not df.empty:
+    latest = df.iloc[-1]
+    latest_val = latest[value_col]
+
+    map_df = build_region_df(latest_val, label)
+
+    if indicator == "NDVI":
+        scale = "Greens"
+    elif indicator == "Rainfall":
+        scale = "Blues"
+    else:
+        scale = "Reds"
+
+    fig_map = px.choropleth(
+        map_df,
+        locations="iso",
+        color=label,
+        hover_name="Region",
+        projection="natural earth",
+        color_continuous_scale=scale,
+        title=f"{label} Across the Americas"
+    )
+
+    fig_map.update_layout(margin=dict(l=0, r=0, t=40, b=0))
+    st.plotly_chart(fig_map, use_container_width=True)
+
+else:
+    st.info("Map will appear once data is available.")
