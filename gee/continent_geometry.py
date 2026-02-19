@@ -1,6 +1,15 @@
-import ee
+def get_americas():
+    countries = ee.FeatureCollection("FAO/GAUL/2015/level0")
 
+    americas = countries.filter(
+        ee.Filter.inList("ADM0_NAME", [
+            "United States of America", "Canada", "Mexico",
+            "Guatemala", "Belize", "Honduras", "El Salvador",
+            "Nicaragua", "Costa Rica", "Panama",
+            "Brazil", "Argentina", "Chile", "Peru", "Colombia",
+            "Venezuela", "Bolivia", "Ecuador", "Paraguay",
+            "Uruguay", "Guyana", "Suriname"
+        ])
+    )
 
-def get_north_america():
-    # Simplified bounding box for NA(smaller extent for testing)
-    return ee.Geometry.Rectangle([-140, 20, -60, 60])
+    return americas.union().geometry()
