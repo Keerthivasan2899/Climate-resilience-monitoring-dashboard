@@ -1,18 +1,25 @@
-"""
-NDVI Module
-Extracts monthly NDVI (2021–2025) for North America
-Computes continental mean and exports to CSV
-"""
+# ===== USER INPUT ======
+# country_name = "Mexico"
+# =======================
+
 import ee
 import pandas as pd
-from continent_geometry import get_north_america
+
+
+def get_country(name):
+    fc = ee.FeatureCollection("USDOS/LSIB_SIMPLE/2017")
+    return fc.filter(ee.Filter.eq("country_na", name))
+
 
 print("Initializing Earth Engine...")
 ee.Initialize(project="gee-climate-dashboard-487203")
 print("Earth Engine initialized successfully.")
 
-print("Getting North America geometry...")
-region = get_north_america()
+country_name = "Mexico"   # ← change this each run
+
+print(f"Getting geometry for {country_name}...")
+region = get_country(country_name)
+print(f"Geometry for {country_name} obtained successfully.")
 
 # NDVI function
 print("Defining NDVI computation function...")
@@ -69,14 +76,15 @@ print("Start Earth Engine export task...")
 
 task = ee.batch.Export.table.toDrive(
     collection=fc,
-    description='NDVI_Monthly_North_America',
+    description=f"NDVI_Monthly_{country_name}_2021_2025",
     folder='GEE_Exports',
-    fileNamePrefix='ndvi_monthly_2021_2025',
+    fileNamePrefix=f'ndvi_monthly_{country_name}_2021_2025',
     fileFormat='CSV'
 )
 
 task.start()
 
+print(f"Starting NDVI export task for {country_name}...")
 print("Export task started. Check your Google Drive for the output CSV file.")
 print("Task status:", task.status())
 print("Task ID:", task.id)
